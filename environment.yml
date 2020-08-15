@@ -4,6 +4,7 @@ channels:
   - defaults
 dependencies:
   - sphinx
+  - numpy
   - pyvisa
   - sphinx_rtd_theme
   - sphinxcontrib-applehelp=1.0.2=py_0
