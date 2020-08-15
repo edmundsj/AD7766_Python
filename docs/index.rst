@@ -1,5 +1,6 @@
 Welcome to Python SCPI AD7766's documentation!
 ==============================================
+This is a test.
 
 .. toctree::
    :maxdepth: 2
