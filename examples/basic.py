@@ -2,14 +2,14 @@ import sys
 sys.path.append('../source')
 from SCPIDevice import *
 
-myDevice = SCPIDevice()
+baudRate = 115200
+myDevice = SCPIDevice(baudRate=baudRate)
 measuredData = myDevice.Measure()
-print(measuredData)
-myDevice.Configure(10)
+print(f'Data from single measured data point: {measuredData}')
+myDevice.Configure(10) # Configures the SCPI device to take 10 measurements
 
-newData = myDevice.Measure()
+newData = myDevice.Measure() # Performs a measurement
 fetchedData = myDevice.Fetch()
 myDevice.closeDevice()
-print(newData)
-print(fetchedData)
-type(newData)
+print(f'Data from multiple measurements: {newData}')
+print(f'Same data, sent again from the Arduino: {fetchedData}')

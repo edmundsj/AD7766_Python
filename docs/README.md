@@ -154,4 +154,4 @@ dependencies:
   - pip:
     - exhale
 ```
-Upload this to your repository, and you should be done. Or just clone this repository. Much less painful.
+Upload this to your repository, and you should be done. Or just clone this repository. Much less painful. If the project is a python project, make sure the environment.yml file contains all the dependencies of the modules documented in that project.

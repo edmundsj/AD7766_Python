@@ -1,14 +1,15 @@
 Welcome to Python SCPI AD7766's documentation!
 ==============================================
-This is a test.
+Documentation for python SCPI interface for the AD7766 via the Arduino Due.
 
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
 
-.. automodule:: SCPIDevice
-   :members:
-   :undoc-members:
+   getting_started
+   api
+   test
+
 
 Indices and tables
 ==================

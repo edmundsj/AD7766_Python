@@ -4,19 +4,26 @@ import time
 class DataError(Exception):
     pass
 
+class DeviceNotFoundError(Exception):
+    pass
+
 class SCPIDevice:
     """This is another class. Is it visible?"""
-    def __init__(self, baudRate=9600):
+    def __init__(self, baudRate=115200):
         resourceManager = pyvisa.ResourceManager()
         resourceList = resourceManager.list_resources()
         resourceIndex = 0
+        numberResources = len(resourceList)
+        if numberResources == 0:
+            raise DeviceNotFoundError("ERROR: no devices found. Please make sure your arduino is plugged in.")
 
         self.device = resourceManager.open_resource(resourceList[resourceIndex])
         self.device.write_termination = '\n'
         self.device.read_termination = '\n'
         self.device.baud_rate = baudRate
+        self.device.timeout = 2000
         self.numberBytes = 1
-        time.sleep(2) # Wait for the Arduino to catch up with us
+        time.sleep(2)
         self.deviceID = self.device.query('*IDN?')
 
     def Configure(self, numberMeasurements):
