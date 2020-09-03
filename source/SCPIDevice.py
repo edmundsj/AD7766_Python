@@ -16,7 +16,8 @@ class DeviceNotFoundError(Exception):
     pass
 
 class SCPIDevice:
-    """SCPI Device base class, can be set up to use either pyserial or pyvisa"""
+    """SCPI Device base class which serves as a wrapper for the pyserial or pyvisa interface and implemets
+    basic SCPI functions, such as Identify, Reset, Measure, Fetch, and others."""
     def __init__(self, baudRate=115200, serialType='pyserial'):
         self.serialType = serialType
         self.numberMeasurements = 1
@@ -56,19 +57,31 @@ class SCPIDevice:
             print(f'Found Device with name: {self.deviceID}')
 
     def inWaiting(self):
+        """
+        Get the number of bytes in the read buffer that have not yet been read
+        """
         if self.serialType == 'pyvisa':
             raise NotImplementedError
         else:
             return self.device.in_waiting
 
     def writeLine(self, stringToWrite):
+        """
+        Wrapper function that writes a set of bytes ending in a newline character.
+
+        :param stringToWrite: The variable arguments are used for
+        :returns: Number of bytes written
+        """
         if self.serialType == 'pyvisa':
             raise NotImplementedException
         else:
             return self.device.write(bytes(stringToWrite + '\n', 'ascii'))
 
     def Configure(self, numberMeasurements):
-        """ Configures the device for measurement """
+        """ Configures the number of measuremets for the device to send back
+
+        :param numberMeasurements: The number of measurements to request from the ADC.
+        """
         self.numberMeasurements = numberMeasurements
         self.numberBytes = numberMeasurements*3 + 1
         if self.serialType == 'pyvisa':
@@ -77,18 +90,31 @@ class SCPIDevice:
             self.configureSerial()
 
     def Measure(self):
+        """
+        Measures data from the ADC based on the number of measurements configured.
+
+        :returns: Array of 8-bit integers starting with the most significant byte of the first measurement.
+        """
         if self.serialType == 'pyvisa':
            return self.measureVisa()
         else:
            return self.measureSerial()
 
     def Fetch(self):
+        """
+        Fetches previously-measured data to ensure data integrity.
+
+        :returns: Array of 8-bit integers starting with the most significant byte of the first measurement.
+        """
         if self.serialType == 'pyvisa':
             self.fetchVisa()
         else:
             self.fetchSerial()
 
     def Reset(self):
+        """
+        Sends SCPI reset command to device flushes serial buffer, and sets default configuration for emasurement.
+        """
         self.numberMeasurements = 1
         self.numberBytes = self.numberMeasurements * 3 + 1
         if self.serialType == 'pyvisa':
@@ -97,17 +123,30 @@ class SCPIDevice:
             self.resetSerial()
 
     def Identify(self):
+        """
+        Requests device's identifier string.
+
+        :return: Newline-stripped string containing the device name
+        """
         if self.serialType == 'pyvisa':
             return self.identifyVisa()
         else:
             return self.identifySerial()
 
     def identifySerial(self):
+        """
+        Identify() function implemented using the pyserial library
+
+        :returns: Device identifier string
+        """
         self.writeLine('*IDN?')
         deviceID = self.device.readline().decode('ascii')[:-2] # Discard carraige return
         return deviceID
 
     def resetSerial(self):
+        """
+        Reset() function implemented using the pyserial library
+        """
         self.writeLine('*RST')
 
         # For some reason, there may be extra bytes held by the OS that we only have access to after we
@@ -117,6 +156,11 @@ class SCPIDevice:
             time.sleep(0.01)
 
     def measureSerial(self):
+        """
+        Measure() function implemented with pyserial library.
+
+        :returns: Array of 8-bit integers starting with the most significant byte of the first measurement.
+        """
         timeoutOld = self.device.timeout
         if(self.numberMeasurements > 1e5):
             self.device.timeout = self.numberMeasurements / self.measurementRate + 1
@@ -138,18 +182,32 @@ class SCPIDevice:
         return measuredData
 
     def fetchSerial(self):
+        """
+        Measure() function implemented with pyserial library.
+
+        :returns: Array of 8-bit integers starting with the most significant byte of the first measurement.
+        """
         self.device.write(toAscii('FETCH?'))
         measuredData = self.device.read(self.numberMeasurements)
         measuredData = np.frombuffer(measuredData[:-2], dtype=np.uint8)
         raise NotImplementedError
 
     def configureSerial(self):
+        """
+        Configure() function implemented with the pyserial library
+        """
         self.writeLine('CONFIGURE ' + str(self.numberMeasurements))
 
     def resetVisa(self):
+        """
+        Reset() function implemented using the pyvisa library.
+        """
         raise NotImplementedError
 
     def identifyVisa(self):
+        """
+        Identify() function implemented using the pyvisa library
+        """
         raise NotImplementedError
 
     def configureVisa(self):
@@ -158,8 +216,11 @@ class SCPIDevice:
         self.device.write(configureString)
 
     def fetchVisa(self):
-        """ Performs a fetch query on the SCPI device (gets data that has already been measured)
-        :return: data previously measured by the device"""
+        """
+        Fetch() function implemented using the pyvisa library
+
+        :returns: Array of 8-bit integers starting with the most significant byte of the first measurement.
+        """
         self.device.write('FETCH?')
         measuredData = self.device.read_bytes(self.numberBytes + 1)
         if measuredData[0] != 35:
@@ -168,7 +229,9 @@ class SCPIDevice:
         return measuredData
 
     def measureVisa(self):
-        """ Performs a measure query on the SCPI device
+        """
+        Measure() function implemented using the pyvisa library.
+
         :return: data measured from the device
         """
 
@@ -182,6 +245,7 @@ class SCPIDevice:
         return measuredData
 
     def closeDevice(self):
-        """ Closes the connection to the Arduino. MUST be located in the script or pyVISA will have a heart
+        """
+        Closes the connection to the Arduino. MUST be located in the script or pyVISA will have a heart
         attack"""
         self.device.close()
