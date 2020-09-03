@@ -3,3 +3,5 @@ _build
 *DS_Store
 api/
 doxyoutput/
+*.pyc
+__pycache__
