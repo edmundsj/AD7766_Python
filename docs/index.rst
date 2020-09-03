@@ -42,14 +42,17 @@ This is probably the most common, and I have errors that should tell you this
 **2. Baud Rate is not correct**
 Make sure the baud rate is the same on the Arduino and the python script. In the test script 'basic.py' it defaults to 115200, but if you call SCPIDevice() with no arguments, it will default to 115200.
 
-Running the Test Suite
+Checking ADC Data Rate
+------------------------
+In the ``examples/`` folder there is a file called ``adc_speedtest.py``, which reads a large number of samples from the ADC and reports the data rate. This should be close to 125kS/s, or 375kB/s. There is some overhead associated with beginning the measurement which should get asymptotically smaller as the number of sampled bytes increases. The data rate I measure at 10M samples is 124.9kSps.
+
+Running the full Test Suite
 --------------------------
 To run the full test suite, which runs a stress test on the communication between the device and the python library, in addition to testing all the auxiliary and post-processing functions, run:
 
 .. code-block:: bash
     
     python -m unittest discover
-
 
 
 Indices and tables
