@@ -10,3 +10,7 @@ Python functions using the unittest module designed to test the SCPI communicati
    :members:
    :undoc-members:
 
+.. automodule:: test_adc_processing
+   :members:
+   :undoc-members:
+

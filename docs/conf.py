@@ -18,7 +18,7 @@ sys.path.insert(0, os.path.abspath('../test'))
 
 # -- Project information -----------------------------------------------------
 
-project = 'Python SCPI AD7766'
+project = 'Python SCPI'
 copyright = '2020, Jordan Edmunds'
 author = 'Jordan Edmunds'
 master_doc = 'index'
