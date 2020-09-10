@@ -67,6 +67,45 @@ class TestArduinoADCSampling(unittest.TestCase):
                     f'Desired bytes: {desiredBytes}' + \
                     f'attempt restart of the arduino.\n')
 
+    def testMeasureSynchronizationPoints(self):
+        """
+        Confirm that we get the expected number of data synchronization events when we sample in a given time period.
+        Assumes an external 1kHz square wave is being applied to pin 20 on the Teensy.
+        """
+        fMeasure = 125000
+        fSync = 1000
+        desiredSynchronizationEvents = 8
+        numberMeasurements = int(fMeasure/fSync * desiredSynchronizationEvents)
+        self.device.Configure(numberMeasurements)
+        self.device.Measure()
+        actualSynchronizationEvents = self.device.syncPoints
+        self.assertEqual(actualSynchronizationEvents, desiredSynchronizationEvents, msg='Failed to synchronize to external function generator. Is it turned on?')
+
+    def testMeasureSynchronizationData(self):
+        """
+        Verify that the synchronization data we get is "reasonable" - that is that points are separated by very close
+        to their expected frequency of 1kHz. This assumes there is a square wave at 1kHz sending data to the Teensy.
+        """
+        fMeasure = 125000
+        fSync = 1000
+        desiredSynchronizationEvents = 3
+        numberMeasurements = int(fMeasure/fSync * desiredSynchronizationEvents)
+        self.device.Configure(numberMeasurements)
+        self.device.Measure()
+        actualSynchronizationEvents = self.device.syncPoints
+        syncData = self.device.getSyncData()
+        bytesPerDataPoint = 3
+        desiredSyncBytes = bytesPerDataPoint * desiredSynchronizationEvents
+
+        # check that the data has the right number of bytes in it
+        self.assertEqual(len(syncData), desiredSyncBytes)
+        measurementPoints = twosToInteger(syncData)
+        measurementDeltas = np.diff(measurementPoints)
+        timeDeltas = 1 / fMeasure * measurementDeltas
+        approxFrequencies = np.reciprocal(timeDeltas)
+        assertAlmostEqual(approxFrequencies[0], fSync)
+        assertAlmostEqual(approxFrequencies[1], fSync)
+
     @classmethod
     def tearDownClass(cls):
         cls.device.closeDevice()

@@ -1,4 +1,3 @@
-import sys
 from DataAquisition import SCPIDevice
 
 baudRate = 115200

@@ -27,8 +27,17 @@ def twosToInteger(twosBytes, firstByte='msb', bytesPerInteger=3):
 
 """
 Converts the AD7766 count to a differential voltage
+
+:param maxVoltage: The maximum voltage that can be seen at either ADC input (5V for the AD7766)
+:param numberBits: The number of bits the ADC uses.
 """
 def countToVoltage(data, numberBits=24, maxVoltage=5):
-    conversionFactor = maxVoltage / pow(2.0, numberBits)
+    # The maximum representable unsigned number is 2^24, but the maximum representable twos complement
+    # number is half that, or 2^24 / 2
+    conversionFactor = maxVoltage / (pow(2.0, numberBits) / 2)
     return np.multiply(data, conversionFactor)
 
+def twosToVoltage(data, bytesPerInteger=3, maxVoltage=5, firstByte='msb'):
+    intermediateData = twosToInteger(data, firstByte=firstByte, bytesPerInteger=bytesPerInteger)
+    voltages = countToVoltage(intermediateData)
+    return voltages

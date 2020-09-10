@@ -35,10 +35,16 @@ class TestADCProcessing(unittest.TestCase):
         """
         Test converting a raw ADC count into a voltage
         """
-        desiredValue = 2.5
+        desiredValue = 5.0
         actualCount = pow(2, 23)
         actualValue = countToVoltage(actualCount)
         assertAlmostEqual(desiredValue, actualValue)
+
+    def testTwosToVoltage(self):
+        desiredVoltage = np.array([5.0])
+        testBytes = np.array([127, 255, 255])
+        actualVoltage = twosToVoltage(testBytes)
+        assertAlmostEqual(desiredVoltage, actualVoltage, absoluteTolerance = 1e-5)
 
 if __name__ == '__main__':
     unittest.main()
