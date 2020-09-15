@@ -30,7 +30,7 @@ voltagesTheoretical = signalAmplitude * np.cos(2*np.pi*signalFrequency * times)
 #ax.plot(voltages)
 #plt.show()
 
-hannWindow = windows.hann(desiredMeasurements) / np.mean(windows.hann(desiredMeasurements))
+hannWindow = windows.hann(desiredMeasurements) / np.sqrt(np.mean(np.square(windows.hann(desiredMeasurements))))
 voltagesTheoretical *= hannWindow
 
 # The single-sided voltage spectral power (rms, by definition)

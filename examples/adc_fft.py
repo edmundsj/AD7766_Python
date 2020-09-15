@@ -23,14 +23,7 @@ rawData = device.Measure()
 endSystemTime = time.perf_counter()
 deltaSystemTime = endSystemTime - startSystemTime
 voltages = twosToVoltage(rawData)
-
-# Print byte rate / bit rate to the screen
-numberBytes = len(rawData)
-numberkB = numberBytes / 1e3
-byteRatekB = numberkB / deltaSystemTime
-byteRatekS = byteRatekB / 3
-bitRatekb = byteRatekB * 8
-print(f'Final byte count: {numberBytes}. Data rate of {byteRatekB} kBps / {bitRatekb} kbps / {byteRatekS} kSps')
+dcOffset = np.mean(voltages)
 
 # Set up our hanning / boxcar window
 if window == 'hann':
@@ -41,10 +34,7 @@ elif window == 'boxcar':
     energyCorrectionFactor = 1
     windowData = np.ones(desiredMeasurements)
 
-dcOffset = np.mean(voltages)
-voltages = voltages * windowData
-voltages -= dcOffset
-voltagesFFTPowerOneSidedVrms = np.square(np.abs(np.fft.fft(voltages)))[0:halfDesiredMeasurements]*2
+voltagesFFTPowerOneSidedVrms = 4*np.square(np.abs(np.fft.fft((voltages-dcOffset)*windowData)))[0:halfDesiredMeasurements]
 frequencies = np.arange(0, samplingFrequency/2, samplingFrequency/2/halfDesiredMeasurements)
 
 theoreticalData = np.sin(2*np.pi*signalFrequency)

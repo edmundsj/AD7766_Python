@@ -78,6 +78,7 @@ class TestArduinoADCSampling(unittest.TestCase):
         numberMeasurements = int(fMeasure/fSync * desiredSynchronizationEvents)
         self.device.Configure(numberMeasurements)
         self.device.Measure()
+        print(self.device.getSyncData())
         actualSynchronizationEvents = self.device.syncPoints
         self.assertEqual(actualSynchronizationEvents, desiredSynchronizationEvents, msg='Failed to synchronize to external function generator. Is it turned on?')
 

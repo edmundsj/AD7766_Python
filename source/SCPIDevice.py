@@ -27,6 +27,7 @@ class SCPIDevice:
         self.numberSynchronizationPulses = 0
         self.measurementRate = 125*1e3
         self.microstepsPerNanometer = 30.3716*1.011 # calibrated from 800nm - 1700nm. Optimized for 5nm steps.
+        self.microstepsCorrection = 6.17*1e-6
 
         with open('device_settings.txt', 'r') as settingsFile:
             data = json.load(settingsFile)
@@ -285,7 +286,7 @@ class SCPIDevice:
     wavelength = property(getWavelength, setWavelength)
 
     def increaseWavelength(self, nm):
-        integerSteps = int(self.microstepsPerNanometer * nm)
+        integerSteps = int((self.microstepsPerNanometer * nm)*(1 + self.microstepsCorrection * nm))
         self.rotateMotor(integerSteps)
         self.currentWavelength += integerSteps / self.microstepsPerNanometer
 
