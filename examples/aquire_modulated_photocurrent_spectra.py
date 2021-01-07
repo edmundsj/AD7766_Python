@@ -3,17 +3,19 @@ Measures the photocurrent spectra from 0.8um to 1.7um (the bandwidth of our InGa
 using previously-developed software for communicating with the AD7766 ADC and controlling a stepper motor
 
 Considerations:
-    The motor is the dominant source of delay in the system, so I will want to measure the photocurrent spectra
+    - The motor is the dominant source of delay in the system, so I will want to measure the photocurrent spectra
+    - If I want the actual pk-pk current and not the sinusoidal component, I need to add a correction factor. This is the case for optical chopping but is not the case for sinusoidal modulation.
 """
 import numpy as np
 import pandas as pd
 from DataAquisition import SCPIDevice, twosToVoltage, twosToInteger
 from Plotting import prettifyPlot, plt
+import time
 
 device = SCPIDevice()
 
-startWavelength = 800
-stopWavelength = 1700
+startWavelength = 1050
+stopWavelength = 1055
 stepWavelength = 5
 wavelengthsToMeasure = np.arange(startWavelength, stopWavelength, stepWavelength)
 
@@ -42,6 +44,7 @@ for wavelength in wavelengthsToMeasure:
     device.wavelength = wavelength
     device.waitForMotor()
     device.motorEnable = False
+    time.sleep(1) # The motor is generating hella noise (I think)
     data = device.Measure()
     voltages = twosToVoltage(data)
     syncPulseLocations = twosToInteger(device.getSyncData())
@@ -67,6 +70,6 @@ device.motorEnable = True
 device.wavelength = startWavelength # set our device back to the original wavelength
 device.closeDevice()
 
-data = pd.DataFrame(data={'wavelength (um)': wavelengthsToMeasure / 1000.0, 'current (pApp)': currents})
+data = pd.DataFrame(data={'Wavelength (um)': wavelengthsToMeasure / 1000.0, 'Photocurrent (pApp)': currents})
 data.to_csv('photocurrent_modulation_spectra.csv', index=False)
 wavelengthsToMeasure = np.arange(startWavelength, stopWavelength, stepWavelength)

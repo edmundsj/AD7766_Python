@@ -129,5 +129,6 @@ class TestArduinoADCSampling(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
+        cls.device.motorEnable = False
         cls.device.Reset()
         cls.device.closeDevice()

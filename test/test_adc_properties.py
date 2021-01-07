@@ -48,7 +48,8 @@ class TestArduinoADCProperties(unittest.TestCase):
         voltageNoiseRMS = np.sqrt(np.sum(voltageSpectralPower[startNoiseBin:]) )
         voltageNoisePSD = 1e9 * voltageNoiseRMS / np.sqrt(noiseBandwidth * 1e3) # in nV / rtHz
 
-        noiseUpperBound = 150 # Differential converter: 120-150, TIA: 420-500 
+        noiseUpperBound = 400 # Differential converter: 120-150, TIA: 250, total ~300. 
+        print(f'Noise PSD: {voltageNoisePSD}')
         self.assertLess(voltageNoisePSD, noiseUpperBound, msg=f'Noise PSD is {voltageNoisePSD} nV/rtHz, expected < {noiseUpperBound}nV/rtHz. RMS Integrated noise is {voltageNoiseRMS*1e6} uV')
 
 

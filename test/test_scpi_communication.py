@@ -51,16 +51,16 @@ class TestArduinoADCSampling(unittest.TestCase):
                     f'Desired bytes: {desiredBytes}' + \
                     f'attempt restart of the arduino.\n')
 
-    @unittest.skip("Extremely large data transfer (long test)")
+    #@unittest.skip("Extremely large data transfer (long test)")
     def testMeasureLargeByteCount(self):
         """
         Asserts that we can measure very large numbers of measurements (1 million in this test) without dropping
         any bytes.
         """
-        desiredMeasurements = int(1e6)
+        desiredMeasurements = int(500000)
         desiredBytes = desiredMeasurements * 3
         self.device.Configure(desiredMeasurements)
-        data = self.device.Measure()
+        data = self.device.Measure() # If this isn't blocking, it should probably be made blocking.
         actualBytes = len(data)
         self.assertEqual(actualBytes, desiredBytes,
                     msg=f'Received wrong number of bytes. Actual bytes: {actualBytes}.' + \

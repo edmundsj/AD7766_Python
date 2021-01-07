@@ -2,6 +2,7 @@ import numpy as np
 from DataAquisition import SCPIDevice, twosToVoltage
 from Plotting import prettifyPlot, plt
 import scipy.signal.windows as windows
+import time
 
 desiredMeasurements = 100000
 halfMeasurements = int(desiredMeasurements/2)
@@ -18,6 +19,7 @@ startNoiseBin = int(startNoiseFrequency / samplingFrequency * desiredMeasurement
 device = SCPIDevice()
 device.motorEnable = False # turn off the motor so our noise doesn't kill us
 device.Configure(desiredMeasurements)
+time.sleep(1)
 data = device.Measure()
 times = np.arange(0, desiredMeasurements / samplingFrequency, 1/samplingFrequency)
 voltages = twosToVoltage(data)
