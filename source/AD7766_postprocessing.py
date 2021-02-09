@@ -31,13 +31,13 @@ Converts the AD7766 count to a differential voltage
 :param maxVoltage: The maximum voltage that can be seen at either ADC input (5V for the AD7766)
 :param numberBits: The number of bits the ADC uses.
 """
-def countToVoltage(data, numberBits=24, maxVoltage=5):
+def countToVoltage(data, numberBits=24, maxVoltage=3.3, differential=False):
     # The maximum representable unsigned number is 2^24, but the maximum representable twos complement
     # number is half that, or 2^24 / 2
-    conversionFactor = maxVoltage / (pow(2.0, numberBits) / 2)
+    conversionFactor = maxVoltage / (pow(2.0, numberBits-1))
     return np.multiply(data, conversionFactor)
 
-def twosToVoltage(data, bytesPerInteger=3, maxVoltage=5, firstByte='msb'):
+def twosToVoltage(data, bytesPerInteger=3, maxVoltage=3.3, firstByte='msb', differential=False):
     intermediateData = twosToInteger(data, firstByte=firstByte, bytesPerInteger=bytesPerInteger)
-    voltages = countToVoltage(intermediateData)
+    voltages = countToVoltage(intermediateData, maxVoltage=maxVoltage, differential=differential)
     return voltages

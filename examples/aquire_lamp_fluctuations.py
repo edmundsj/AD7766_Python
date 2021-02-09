@@ -23,12 +23,12 @@ wavelengthsToMeasure = np.arange(startWavelength, stopWavelength, stepWavelength
 fModulation = 1 # kHz
 fSampling = 125 # kHz
 correctionFactor = 0.86715082588 # Corrects for the conversion from sinusoidal component to pk-pk square wave value
-Tmax = 250 # ms
+Tmax = 1000# ms
 samplesPerMeasurement = int(Tmax * fSampling)
 signalBin = int(fModulation * Tmax)
 device.Configure(samplesPerMeasurement)
 
-TIAResistance = 4.7 # MOhms
+TIAResistance = 1 # MOhms
 totalTransimpedance = 2 * TIAResistance
 currents = np.array([])
 
@@ -38,11 +38,9 @@ device.motorEnable = True
 device.wavelength = startWavelength
 device.waitForMotor()
 
-for wavelength in wavelengthsToMeasure:
-    device.motorEnable = True # Enable the motor for movement
-    device.wavelength = wavelength
-    device.waitForMotor()
-    device.motorEnable = False
+device.motorEnable = False
+
+for x in range(5000):
     data = device.Measure()
     voltages = correctionFactor * twosToVoltage(data)
     voltagePowerSpectrum = np.square(np.abs(np.fft.fft(voltages/len(voltages))))
@@ -55,14 +53,10 @@ for wavelength in wavelengthsToMeasure:
     currentSignalAmplitudenApp = currentSignalAmplitudeuApp * 1e3
 
     currents = np.append(currents, currentSignalAmplitudenApp)
-    print(f'{wavelength} nm: {currentSignalAmplitudenApp:.2f}')
+    print(f'{startWavelength} nm: {currentSignalAmplitudenApp:.2f}')
 
-device.motorEnable = True
-device.wavelength = startWavelength # set our device back to the original wavelength
-device.waitForMotor()
-device.motorEnable = False
 device.closeDevice()
 
-data = pd.DataFrame(data={'Wavelength (um)': wavelengthsToMeasure / 1000.0, 'Photocurrent (nApp)': currents})
-data.to_csv('photocurrent_spectra.csv', index=False)
+data = pd.DataFrame(data={'Photocurrent (nApp)': currents})
+data.to_csv('lamp_fluctuations.csv', index=False)
 wavelengthsToMeasure = np.arange(startWavelength, stopWavelength, stepWavelength)

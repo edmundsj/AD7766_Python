@@ -3,16 +3,16 @@ import unittest
 sys.path.append('source')
 from UnitTesting.shorthand import *
 from AD7766_postprocessing import *
-from DataAquisition import SCPIDevice
+from DataAquisition import MCP3561
 
 class TestArduinoADCSampling(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.device = SCPIDevice()
+        cls.device = MCP3561(sampling_frequency=9.76*1e3)
 
     def setUp(self):
-        self.device.device.reset_input_buffer() # ONLY WORKS ON PYSERIAL
+        self.device.Reset() # ONLY WORKS ON PYSERIAL
 
     def testIdentify(self):
         """
@@ -39,7 +39,7 @@ class TestArduinoADCSampling(unittest.TestCase):
         Asserts that the Configure() function can be used to measure between 1 and 100,000 measurements without
         dropping a single byte.
         """
-        desiredMeasurementsList = [1, 10, 100, 1000, 10000, int(1e5)]
+        desiredMeasurementsList = [1, 10, 100, 1000, 10000]
 
         for desiredMeasurements in desiredMeasurementsList:
             desiredBytes = desiredMeasurements * 3
@@ -51,7 +51,7 @@ class TestArduinoADCSampling(unittest.TestCase):
                     f'Desired bytes: {desiredBytes}' + \
                     f'attempt restart of the arduino.\n')
 
-    #@unittest.skip("Extremely large data transfer (long test)")
+    @unittest.skip("Extremely large data transfer (long test)")
     def testMeasureLargeByteCount(self):
         """
         Asserts that we can measure very large numbers of measurements (1 million in this test) without dropping
@@ -72,10 +72,9 @@ class TestArduinoADCSampling(unittest.TestCase):
         Confirm that we get the expected number of data synchronization events when we sample in a given time period.
         Assumes an external 1kHz square wave is being applied to pin 20 on the Teensy.
         """
-        fMeasure = 125000
         fSync = 1000
         desiredSynchronizationEvents = 8
-        numberMeasurements = int(fMeasure/fSync * desiredSynchronizationEvents)
+        numberMeasurements = int(self.device.measurementRate/fSync * desiredSynchronizationEvents)
         self.device.Configure(numberMeasurements)
         self.device.Measure()
         print(self.device.getSyncData())
@@ -87,10 +86,9 @@ class TestArduinoADCSampling(unittest.TestCase):
         Verify that the synchronization data we get is "reasonable" - that is that points are separated by very close
         to their expected frequency of 1kHz. This assumes there is a square wave at 1kHz sending data to the Teensy.
         """
-        fMeasure = 125000
         fSync = 1000
         desiredSynchronizationEvents = 3
-        numberMeasurements = int(fMeasure/fSync * desiredSynchronizationEvents)
+        numberMeasurements = int(self.device.measurementRate/fSync * desiredSynchronizationEvents)
         self.device.Configure(numberMeasurements)
         self.device.Measure()
         actualSynchronizationEvents = self.device.syncPoints
@@ -102,7 +100,7 @@ class TestArduinoADCSampling(unittest.TestCase):
         self.assertEqual(len(syncData), desiredSyncBytes)
         measurementPoints = twosToInteger(syncData)
         measurementDeltas = np.diff(measurementPoints)
-        timeDeltas = 1 / fMeasure * measurementDeltas
+        timeDeltas = 1 / self.device.measurementRate * measurementDeltas
         approxFrequencies = np.reciprocal(timeDeltas)
         assertAlmostEqual(approxFrequencies[0], fSync)
         assertAlmostEqual(approxFrequencies[1], fSync)

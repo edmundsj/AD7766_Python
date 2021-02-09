@@ -4,14 +4,14 @@ import numpy as np
 sys.path.append('source')
 from UnitTesting.shorthand import *
 from AD7766_postprocessing import *
-from DataAquisition import SCPIDevice
+from DataAquisition import MCP3561
 import matplotlib.pyplot as plt
 
 class TestArduinoADCProperties(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.device = SCPIDevice()
+        cls.device = MCP3561(sampling_frequency=9.76*1e3)
 
     def setUp(self):
         self.device.device.reset_input_buffer() # ONLY WORKS ON PYSERIAL
@@ -26,7 +26,7 @@ class TestArduinoADCProperties(unittest.TestCase):
 
         desiredMeasurements = 10000
         halfMeasurements = int(desiredMeasurements/2)
-        samplingFrequency = 125 # kHz
+        samplingFrequency = 4.68 # kHz
         frequencies = np.arange(0, samplingFrequency/2, samplingFrequency/desiredMeasurements)
 
         signalFrequency = 1 # kHz
