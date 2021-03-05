@@ -22,6 +22,8 @@ def twosToInteger(twosBytes, firstByte='msb', bytesPerInteger=3):
         isNegative = bool(twosBytes[-1] & 0b10000000)
         number -= np.power(2, 8*bytesPerInteger)*isNegative
 
+    if isinstance(number, np.ndarray):
+        number = number.astype(int)
     return number
 
 

@@ -3,7 +3,7 @@ Uses a Hann window and plots the PSD and recorded time-domain voltage to screen.
 """
 import numpy as np
 import pandas as pd
-from DataAquisition import SCPIDevice, twosToVoltage
+from DataAquisition import MCP3561, twosToVoltage
 from Plotting import prettifyPlot, plt
 import scipy.signal.windows as windows
 import time
@@ -20,7 +20,7 @@ stopNoiseFrequency = samplingFrequency/2
 noiseBandwidth = (stopNoiseFrequency - startNoiseFrequency)
 startNoiseBin = int(startNoiseFrequency / samplingFrequency * desiredMeasurements)
 
-device = SCPIDevice()
+device = MCP3561()
 device.Configure(desiredMeasurements)
 data = device.Measure()
 device.waitForMotor()

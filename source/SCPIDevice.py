@@ -20,17 +20,21 @@ class SCPIDevice:
 	"""SCPI Device base class which serves as a wrapper for the pyserial or pyvisa interface and implemets
 	basic SCPI functions, such as Identify, Reset, Measure, Fetch, and others."""
 
-	def __init__(self, baudRate=9600):
+	def __init__(self, baudRate=9600, device_type='usbserial'):
 		serialPortsList = [port.device for port in list_ports.comports()]
 		containsUSBModem = ['usbmodem' in x for x in serialPortsList]
 		containsUSBSerial = ['usbserial' in x for x in serialPortsList]
-		usbModemIndices = [i for i in range(len(serialPortsList)) \
-			if containsUSBModem[i] == True or containsUSBSerial[i] == True]
+		usbModemIndices = [i for i in range(len(serialPortsList)) if containsUSBModem[i] == True]
+		usbSerialIndices = [i for i in range(len(serialPortsList)) if containsUSBSerial[i] == True]
 
-		if len(usbModemIndices) == 0:
+		if len(usbModemIndices) == 0 and len(usbSerialIndices) == 0:
 			raise Exception("No USB devices found. Check device is plugged in and try again.")
 
-		self.device = serial.Serial(serialPortsList[usbModemIndices[0]])
+		if device_type == 'usbserial':
+			self.device = serial.Serial(serialPortsList[usbSerialIndices[0]])
+		elif device_type == 'usbmodem':
+			self.device = serial.Serial(serialPortsList[usbModemIndices[0]])
+
 		self.device.timeout = 3 # MAY NEED TO CHANGE FOR LARGER DATA STREAMS
 		self.device.baudrate = baudRate
 		self.Reset()
@@ -57,18 +61,17 @@ class SCPIDevice:
 		"""
 		Wrapper function that writes a set of bytes ending in a newline character.
 
-		:param stringToWrite: The variable arguments are used for
-		:returns: Number of bytes written
+		:returns: Array of bytes
 		"""
 		return self.device.readline().decode('ascii').rstrip('\n\r')
 
-	def Fetch(self):
+	def readLineRaw(self):
 		"""
-		Fetches previously-measured data to ensure data integrity.
+		Wrapper function that reads a set of bytes ending in a newline character.
 
-		:returns: Array of 8-bit integers starting with the most significant byte of the first measurement.
+		:returns: Array of bytes
 		"""
-		self.fetchSerial()
+		return self.device.readline()
 
 	def Reset(self):
 		"""

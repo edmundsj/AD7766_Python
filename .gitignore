@@ -5,3 +5,4 @@ api/
 doxyoutput/
 *.pyc
 __pycache__
+*.csv

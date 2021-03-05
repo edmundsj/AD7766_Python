@@ -2,101 +2,95 @@ from .SCPIDevice import SCPIDevice
 import serial
 import json
 import numpy as np
+import time
+import re
+from math import ceil
 
-class MCP3561(SCPIDevice):
-	def __init__(self, baudRate=115200, sampling_frequency=9.76*1e3):
-		SCPIDevice.__init__(self, baudRate=baudRate)
+class Keithley(SCPIDevice):
+	def __init__(self):
+		SCPIDevice.__init__(self, baudRate=9600)
+		self._set_voltage = 0
+		self._set_current = 0
+		self._output = False
+		self._mode = 'voltage'
 
-		self.numberMeasurements = 1
-		self.numberBytes = self.numberMeasurements*3 + 1
-		self.numberSynchronizationPulses = 0
-		self.measurementRate = sampling_frequency
-		self.microstepsPerNanometer = 30.3716*1.011 # calibrated from 800nm - 1700nm. Optimized for 5nm steps.
-		self.microstepsCorrection = -6.17*1e-6
+	def setVoltageMode(self):
+		if self._mode != 'voltage':
+			self.writeLine('source:function voltage')
+			self._mode = 'voltage'
 
-		with open('device_settings.txt', 'r') as settingsFile:
-			data = json.load(settingsFile)
-			self._wavelength = data['wavelength']
+	def setCurrentMode(self):
+		if self._mode != 'current':
+			self.writeLine('source:function current')
+			self._mode = 'current'
 
-	def setWavelength(self, wavelength):
-		self.increaseWavelength(wavelength - self.wavelength)
+	def setVoltage(self, voltage):
+		self.setVoltageMode()
+		if self._set_voltage != voltage:
+			self.writeLine('source:voltage:level ' + str(voltage))
+			self._set_voltage = voltage
 
-		with open('device_settings.txt', 'w') as settingsFile:
-			json.dump({'wavelength': float(self._wavelength)}, settingsFile)
+	def setCurrent(self, current):
+		self.setCurrentMode()
+		if self._set_current != current:
+			self.writeLine('source:current:level ' + str(current))
+			self._set_current = current
 
-	def getWavelength(self):
-		return self._wavelength
+	def outputToggle(self):
+		if self._output == True:
+			self.writeLine('output:state: off')
+		if self_output == False:
+			self.writeLine('output:state: on')
+		self._output = not(self._output)
 
-	wavelength = property(getWavelength, setWavelength)
+	def outputOn(self):
+		self.writeLine('output:state on')
+		self._output = True
 
-	def increaseWavelength(self, nm):
-		integerSteps = int(np.round((self.microstepsPerNanometer * nm)*(1 + self.microstepsCorrection * nm)))
-		self.rotateMotor(integerSteps)
-		self._wavelength += integerSteps / self.microstepsPerNanometer
+	def outputOff(self):
+		self.writeLine('output:state off')
+		self._output = False
 
-	def getSyncPoints(self):
-		"""
-		Get the number of points we will use for synchronization and subsequent sampling
+	def setCurrentCompliance(self, current):
+		self.writeLine('sense:current:protection:level ' + str(current))
 
-		:return syncPoints: The number of pulses measured from the signal generator
-		"""
-		self.writeLine('SYNC:NUMPOINTS?')
-		return int(self.readLine())
+	def setVoltageCompliance(self, voltage):
+		self.writeLine('sense:voltage:protection:level ' + str(voltage))
 
-	syncPoints = property(getSyncPoints)
+	def applyVoltageMeasureCurrent(self, voltages, delay=0.5):
+		if(delay < 0.25):
+			print("WARNING: COMMUNICATION OVERFLOW WILL BE CAUSED. DELAY CANNOT BE LESS THAN 0.2s. SWITCHING TO 0.2s")
+			delay = 0.25
+		if self._output == False:
+			self.setVoltage(0)
+			self.outputOn()
+		measured_currents = np.array([])
+		measured_voltages = np.array([])
+		if isinstance(voltages, (np.ndarray, list, tuple)):
+			if len(voltages) > 200:
+				segments = ceil(len(voltages) / 200)
+				voltage_container = np.array_split(voltages, segments)
+			else:
+				voltage_container = np.array([voltages])
+			for voltages in voltage_container:
+				for voltage in voltages:
+					self.setVoltage(voltage)
+					time.sleep(delay/2) # Wait 500ms for the device [HACK - NEED TO FIX THIS ]
+					self.writeLine('measure:current?')
+					time.sleep(delay/2)
+				data = self.readLine()
+				data = np.array(re.split(',|\r', data), dtype=np.float64)
+				data = data.reshape(len(voltages), 5)
+				measured_voltages = np.append(measured_voltages, data[:,0])
+				measured_currents = np.append(measured_currents, data[:,1])
 
-	def getSyncData(self):
-		"""
-		Get the measurement numbers that each synchronization pulse corresponds to.
+		else:
+			self.setVoltage(voltages)
+			self.writeLine('read?')
+			data = self.readLine().split(',')
+			measured_voltages = float(data[0])
+			measured_currents = float(data[1])
 
-		:returns data: an array of integers corresponding to the measurement indices of the synchronization point events.
-
-		"""
-		self.writeLine('SYNC:DATA?')
-		measuredData = self.device.read(self.numberBytes)
-		measuredData = np.frombuffer(measuredData[1:], dtype=np.uint8) # Discard the leading #
-		return measuredData
-
-	def closeDevice(self):
-		self.device.close()
-		with open('device_settings.txt', 'w') as settingsFile:
-			json.dump({'wavelength': float(self._wavelength)}, settingsFile)
-
-	def Configure(self, numberMeasurements):
-		""" Configures the number of measuremets for the device to send back
-
-		:param numberMeasurements: The number of measurements to request from the ADC.
-		"""
-		if numberMeasurements > 500000:
-			print("TEENSY CANNOT DO MORE THAN 600K MEASUREMENTS. SETTING TO 500K")
-			numberMeasurements = 500000
-
-		self.numberMeasurements = int(numberMeasurements)
-		self.numberBytes = int(numberMeasurements)*3 + 1
-		self.writeLine('CONFIGURE ' + str(self.numberMeasurements))
-
-	def Measure(self):
-		"""
-		Measures data from the ADC based on the number of measurements configured.
-
-		:returns: Array of 8-bit integers starting with the most significant byte of the first measurement.
-		"""
-		timeoutOld = self.device.timeout
-		if(self.numberMeasurements / self.measurementRate > self.device.timeout - 0.1):
-			self.device.timeout = self.numberMeasurements / self.measurementRate * 1.2 # Give some wiggle room.
-
-		bytesWritten = self.writeLine('MEASURE?')
-		measuredData = self.device.read(self.numberBytes)
-
-		if len(measuredData) == 0:
-			raise Exception(f"No data measured from device. Attempted to read {self.numberBytes} bytes. " + \
-					f"{bytesWritten} bytes successfully written")
-
-		measuredData = np.frombuffer(measuredData[1:], dtype=np.uint8)
-		#else:
-		#	 raise Exception("Data corrupted. Did not get # as first character.")
-
-		if(self.numberMeasurements / self.measurementRate > self.device.timeout - 0.1):
-			self.device.timeout = timeoutOld
-
-		return measuredData
+		self.setVoltage(0)
+		self.outputOff()
+		return (measured_voltages, measured_currents)
